@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+  MANAGER
+  HR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+  PROBATION
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique @db.VarChar(150)
+  username     String     @unique @db.VarChar(50)
+  password     String     @db.Text
+  name         String     @db.VarChar(150)
+  role         Role       @default(USER)
+  status       UserStatus @default(ACTIVE)
+
+  lastLoginAt         DateTime?
+  failedLoginAttempts Int       @default(0)
+
+  refreshTokens RefreshToken[]
+  employee      Employee?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email, username])
+  @@index([status])
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  token      String    @unique @db.Text
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceInfo String?
+  ipAddress  String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Department {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String? @db.Text
+
+  parentId String?
+  parent   Department?  @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children Department[] @relation("DeptHierarchy")
+
+  managerId String?   @unique
+  manager   Employee? @relation("DeptManager", fields: [managerId], references: [id])
+
+  employees Employee[] @relation("DeptEmployees")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model JobTitle {
+  id        String     @id @default(cuid())
+  title     String     @unique
+  minSalary Decimal?   @db.Decimal(10, 2)
+  maxSalary Decimal?   @db.Decimal(10, 2)
+  employees Employee[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Employee {
+  id String @id @default(cuid())
+
+  firstName     String
+  lastName      String
+  email         String    @unique
+  personalEmail String?
+  phone         String?
+  address       String?   @db.Text
+  dateOfBirth   DateTime?
+  photoPath     String?
+
+  status          EmployeeStatus @default(ACTIVE)
+  hireDate        DateTime       @default(now())
+  terminationDate DateTime?
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  departmentId String?
+  department   Department? @relation("DeptEmployees", fields: [departmentId], references: [id])
+
+  jobTitleId String?
+  jobTitle   JobTitle? @relation(fields: [jobTitleId], references: [id])
+
+  managerId    String?
+  manager      Employee?  @relation("ManagerSubordinates", fields: [managerId], references: [id])
+  subordinates Employee[] @relation("ManagerSubordinates")
+
+  managedDept Department? @relation("DeptManager")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([departmentId])
+  @@index([managerId])
+}
