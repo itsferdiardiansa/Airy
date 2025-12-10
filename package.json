@@ -2,20 +2,31 @@
   "name": "@airy/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
   "private": true,
-  "dependencies": {},
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "postinstall": "mkdir -p .nx",
+    "prepare": "husky",
+    "clean-install": "rm -rf .nx dist node_modules/.cache/nx pnpm-lock.yaml && pnpm i",
+    "format": "pnpm nx run-many -t format",
+    "format:write": "pnpm nx run-many -t format:write",
+    "api:dashboard": "npx nx dev @airy/api-dashboard"
+  },
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@nx/eslint-plugin": "^22.2.0",
     "@nx/js": "22.2.0",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
+    "eslint": "^9.36.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "nx": "22.2.0",
     "prettier": "^2.6.2",
     "tslib": "^2.3.0",
-    "typescript": "~5.9.2"
-  },
-  "workspaces": [
-    "packages/*"
-  ]
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.49.0"
+  }
 }
